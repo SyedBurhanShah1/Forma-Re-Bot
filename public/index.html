@@ -616,9 +616,9 @@ async function askClaude(question){
 
 /* ---------- Notify HR of unanswered questions via Google Apps Script ---------- */
 // Paste the Web App URL from your Apps Script deployment here. Leave blank to disable.
-const UNANSWERED_WEBHOOK_URL = "";
+const UNANSWERED_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyzz24vCr9n3LaN20ZD6Sb_nonr0_KPDY5q0AagBW50cnFbB6anlfw2ZVqARnr41oMo/exec";
 // Must match the SHARED_SECRET constant in your Apps Script code.
-const UNANSWERED_WEBHOOK_SECRET = "";
+const UNANSWERED_WEBHOOK_SECRET = "formare-7k2xopl";
 
 function reportUnanswered(question){
   if(!UNANSWERED_WEBHOOK_URL) return;
