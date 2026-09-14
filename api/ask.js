@@ -103,7 +103,7 @@ async function fetchKnowledgeBase() {
 // Which Groq model to use. llama-3.3-70b-versatile is a strong, well-tested default.
 // If you hit free-tier rate limits with many employees using it at once, openai/gpt-oss-20b
 // is smaller/faster with a higher allowance — swap the string below.
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
