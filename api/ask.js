@@ -1,10 +1,10 @@
 // ============================================================
 // FORMA RE — Studio Assistant backend (Vercel serverless function)
 // ------------------------------------------------------------
-// Runs server-side only. The Gemini API key never reaches the
+// Runs server-side only. The Groq API key never reaches the
 // browser. The frontend calls POST /api/ask with { question },
 // and this function returns { answer, related, found }.
-// Uses Google's Gemini API (free tier) — see README for setup.
+// Uses Groq's API (free tier) — see README for setup.
 // ============================================================
 
 const SYSTEM_PROMPT_TEMPLATE = `You are the internal Studio Assistant for FORMA RE, an architecture firm.
@@ -100,10 +100,10 @@ async function fetchKnowledgeBase() {
   return text;
 }
 
-// Which Gemini model to use. gemini-2.5-flash is a good default (quality + speed).
-// If you hit free-tier rate limits with many employees using it, gemini-2.5-flash-lite
-// has a higher daily request allowance at slightly lower quality — swap the string below.
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// Which Groq model to use. llama-3.3-70b-versatile is a strong, well-tested default.
+// If you hit free-tier rate limits with many employees using it at once, openai/gpt-oss-20b
+// is smaller/faster with a higher allowance — swap the string below.
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -117,9 +117,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    res.status(500).json({ error: 'Server is missing GEMINI_API_KEY. Set it in your Vercel project environment variables.' });
+    res.status(500).json({ error: 'Server is missing GROQ_API_KEY. Set it in your Vercel project environment variables.' });
     return;
   }
 
@@ -133,29 +133,31 @@ export default async function handler(req, res) {
     }
     const systemPrompt = buildSystemPrompt(knowledgeBase);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: question }] }],
-        generationConfig: {
-          maxOutputTokens: 600,
-          responseMimeType: 'application/json'
-        }
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: question }
+        ],
+        max_tokens: 600,
+        response_format: { type: 'json_object' }
       })
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      res.status(response.status).json({ error: `Gemini API error: ${errText}` });
+      res.status(response.status).json({ error: `Groq API error: ${errText}` });
       return;
     }
 
     const data = await response.json();
-    const candidate = (data.candidates || [])[0];
-    const raw = candidate?.content?.parts?.map((p) => p.text || '').join('') || '';
+    const raw = data?.choices?.[0]?.message?.content || '';
     const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let result;
